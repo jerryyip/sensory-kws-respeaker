@@ -22,14 +22,16 @@ void stop();
 std::unique_ptr<std::thread> m_thread;
 bool is_running = false;
 std::mutex mutex_is_running;
+bool is_stop = false;
 
 SnsrSession m_session;
 
 void int_handler(int signal)
 {
     printf("Caught signal %d, quit...\n", signal);
-
+    
     stop();
+    is_stop = true;
 }
 
 int main(int argc, char *argv[])
@@ -58,9 +60,10 @@ int main(int argc, char *argv[])
         stop();
     }
 
-    while (1)
+    while (!is_stop)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+	std::cout << "running..." << std::endl;
+	std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
 
     return 0;
@@ -91,6 +94,7 @@ SnsrRC wakeWordDetectedSensoryCallback(SnsrSession s, const char* key, void* use
     // SensoryWakeWordEngine* engine =
     //         static_cast<SensoryWakeWordEngine*>(userData);
     // engine->callWakeWordDetected();
+    std::system("aplay ding.wav");
     return SNSR_RC_OK;
 }
 
@@ -229,7 +233,14 @@ void main_loop()
 
 void stop()
 {
-    if (m_session)
+	{
+	    std::lock_guard<std::mutex> lock(mutex_is_running);
+		is_running = false;
+	}
+	m_thread->join();
+	snsrClearRC(m_session);
+	snsrSetStream(m_session,SNSR_SOURCE_AUDIO_PCM, nullptr);
+	if (m_session)
     {
         snsrRelease(m_session);
         m_session = nullptr;
