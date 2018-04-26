@@ -10,7 +10,7 @@
 
 const std::string ALEXA_TASK_VERSION = "~0.7.0";
 // const std::string MODEL_FILE = "../ext/resources/spot-alexa-rpi.snsr";
-const std::string MODEL_FILE = "models/spot-alexa-rpi-20500.snsr";
+const std::string MODEL_FILE = "models/spot-alexa-rpi-31000.snsr";
 
 bool init();
 bool start();
