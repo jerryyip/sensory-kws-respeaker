@@ -1,7 +1,12 @@
 #include "snsr.h"
 #include <thread>
-#include <signal>
+#include <csignal>
+#include <mutex>
+#include <cstddef>
+#include <cstdint>
+#include <iostream>
 
+//using namespace std;
 
 const std::string ALEXA_TASK_VERSION = "~0.7.0";
 // const std::string MODEL_FILE = "../ext/resources/spot-alexa-rpi.snsr";
@@ -27,7 +32,7 @@ void int_handler(int signal)
     stop();
 }
 
-int main(int argc, void *argv[])
+int main(int argc, char *argv[])
 {
     // Configures signal handling.
     struct sigaction sig_int_handler;
@@ -41,9 +46,9 @@ int main(int argc, void *argv[])
         std::cout << "******* Init success *******" << std::endl;
     }
     else
-    (
+    {
         stop();
-    )
+    }
     if (start())
     {
         std::cout << "******* Start success *******" << std::endl;
@@ -66,7 +71,7 @@ int main(int argc, void *argv[])
 // and are about to be processed.
 // This callback exists to allow sensory to gracefully exit when we wish
 // to end the thread.
-SnsrRC samplesReadySensoryCallback(SnsrSession s) {
+SnsrRC samplesReadySensoryCallback(SnsrSession s, const char* key, void* userData) {
     bool _is_running;
     {
         std::lock_guard<std::mutex> _lock(mutex_is_running);
@@ -80,14 +85,31 @@ SnsrRC samplesReadySensoryCallback(SnsrSession s) {
 }
 
 // Callback for when the wakeword is detected
-SnsrRC wakeWordDetectedSensoryCallback(SnsrSession s) {
-    static number = 0;
+SnsrRC wakeWordDetectedSensoryCallback(SnsrSession s, const char* key, void* userData) {
+    static int number = 0;
     std::cout << " *** Wakeword Detected ***" << ++number << std::endl;
     // SensoryWakeWordEngine* engine =
     //         static_cast<SensoryWakeWordEngine*>(userData);
     // engine->callWakeWordDetected();
     return SNSR_RC_OK;
 }
+
+// Returns information about the ongoing sensory session.
+// Primarily used to populate error messages.
+std::string getSensoryDetails(SnsrSession session, SnsrRC result) {
+
+   	std::string message;
+	if(session) {
+    	message = snsrErrorDetail(session);
+    } else {
+        message = snsrRCMessage(result);
+    }
+    if("" == message) {
+        message = "Unrecognized error";
+	}                     
+    return message;
+}
+
 
 bool init()
 {
@@ -140,7 +162,7 @@ bool init()
 
     // like a switch
     result = snsrSetHandler(m_session, SNSR_SAMPLES_EVENT,
-                            snsrCallback(samplesReadySensoryCallback));
+                            snsrCallback(samplesReadySensoryCallback, nullptr, nullptr));
     if(result != SNSR_RC_OK) {
         std::cout << "Could not set audio samples callback: " 
                 << getSensoryDetails(m_session, result) << std::endl;
@@ -150,13 +172,14 @@ bool init()
 
     // do callback after detecting key word
     result = snsrSetHandler(m_session, SNSR_RESULT_EVENT,
-                            snsrCallback(wakeWordDetectedSensoryCallback));
+                            snsrCallback(wakeWordDetectedSensoryCallback, nullptr, nullptr));
     if(result != SNSR_RC_OK) {
         std::cout << "Could not set audio samples callback: " 
                 << getSensoryDetails(m_session, result) << std::endl;
         // throw WakeWordException("Could not set wake word detected callback: " +
         //                                 getSensoryDetails(m_session, result));
     }
+    return true;
 
 }
 
@@ -185,8 +208,9 @@ bool start()
         is_running = true;
     }
     
-    m_thread.reset(new std::thread(&main_loop, this));
+    m_thread.reset(new std::thread(&main_loop));
     // m_thread = make_unique<std::thread>(&SensoryWakeWordEngine::mainLoop, this);
+    return true;
 } 
 
 void main_loop()
