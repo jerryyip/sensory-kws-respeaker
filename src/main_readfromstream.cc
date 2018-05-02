@@ -16,7 +16,7 @@
 #include <respeaker.h>
 #include <chain_nodes/pulse_collector_node.h>
 #include <chain_nodes/selector_node.h>
-#include "include/sensory.h"
+#include "../include/sensory.h"
 
 extern "C"
 {
@@ -58,7 +58,8 @@ int main(int argc, char *argv[]) {
     sigaction(SIGTERM, &sig_int_handler, NULL);
 
     // start snsr
-    snsr = SensoryDetect("models/spot-alexa-rpi-31000.snsr");
+    SensoryDetect snsr;
+    snsr = SensoryDetect::SensoryDetect("models/spot-alexa-rpi-31000.snsr");
     snsr.init();
 
 

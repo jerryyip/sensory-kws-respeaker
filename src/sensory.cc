@@ -1,5 +1,7 @@
-#include "components/sensory.h"
-
+#include "../include/sensory.h"
+#include <iostream>
+#include <cstdint>
+#include <cstddef>
 
 namespace sensory {
 
@@ -27,8 +29,8 @@ static std::string getSensoryDetails(SnsrSession session, SnsrRC result) {
 
 
 // Callback for when the wakeword is detected
-SnsrRC SensoryApi::wakeWordDetectedSensoryCallback(SnsrSession s, const char* key, void* userData) {
-    SensoryApi* engine = static_cast<SensoryApi*>(userData);
+SnsrRC SensoryDetect::wakeWordDetectedSensoryCallback(SnsrSession s, const char* key, void* userData) {
+    SensoryDetect* engine = static_cast<SensoryDetect*>(userData);
     SnsrRC result;
     const char* keyword;
     double begin;
@@ -61,20 +63,20 @@ SnsrRC SensoryApi::wakeWordDetectedSensoryCallback(SnsrSession s, const char* ke
     // static int number = 0;
     // std::cout << " *** Wakeword Detected ***" << ++number << std::endl;
     std::system("aplay ding.wav");
-    _detection_status = 1;
+    engine->_detection_status = 1;
     return SNSR_RC_OK;
 }
 
 // init
 // 
-SensoryApi::SensoryDetect(const std::string& model_name)
+SensoryDetect::SensoryDetect(const std::string& model_name)
 {
     _alexa_task_version = std::string("~0.7.0");
     _detection_status = 0;
 }
 
 
-bool SensoryApi::init()
+bool SensoryDetect::init()
 {
     if (_m_session)
     {
@@ -128,7 +130,7 @@ bool SensoryApi::init()
 
     // do callback after detecting key word
     result = snsrSetHandler(_m_session, SNSR_RESULT_EVENT,
-                            snsrCallback(wakeWordDetectedSensoryCallback, nullptr, nullptr));
+                            snsrCallback(wakeWordDetectedSensoryCallback, nullptr, reinterpret_cast<void*>(this)));
     if(result != SNSR_RC_OK) {
         std::cout << "Could not set audio samples callback: " 
                 << getSensoryDetails(_m_session, result) << std::endl;
@@ -138,16 +140,16 @@ bool SensoryApi::init()
 
 
 // input 40ms data
-int SensoryApi::RunDetection(const int16_t* const data, const int array_length, bool is_end)
+int SensoryDetect::RunDetection(const int16_t* const data, const int array_length, bool is_end)
 {
     _detection_status = 0;
     int err;
     snsrSetStream(
-        m_session,
+        _m_session,
         SNSR_SOURCE_AUDIO_PCM,
         snsrStreamFromMemory(
             data, array_length * sizeof(int16_t), SNSR_ST_MODE_READ));
-    result = snsrRun(m_session);
+    SnsrRC result = snsrRun(_m_session);
     switch (result) {
         case SNSR_RC_STREAM_END:
             // Reached end of buffer without any keyword detections
@@ -166,17 +168,20 @@ int SensoryApi::RunDetection(const int16_t* const data, const int array_length, 
             break;
     }
     // Reset return code for next round
-    snsrClearRC(m_session);
+    snsrClearRC(_m_session);
     return err;
 }
 
 
-int SensoryApi::GetDetectionStatus()
+int SensoryDetect::GetDetectionStatus()
 {
     return _detection_status;
 }
 
 
-SensoryApi::~SensoryApi
+SensoryDetect::~SensoryDetect()
+{
+    snsrRelease(_m_session);
+}
 
 } // namespace

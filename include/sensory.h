@@ -10,7 +10,7 @@ namespace sensory
 {
 
 
-class SensoryApi
+class SensoryDetect
 {
 public:
     SensoryDetect(const std::string& model_file_path);
@@ -24,7 +24,7 @@ public:
     ~SensoryDetect();
 
 private:
-    SnsrRC wakeWordDetectedSensoryCallback(SnsrSession s, const char* key, void* userData);
+    static SnsrRC wakeWordDetectedSensoryCallback(SnsrSession s, const char* key, void* userData);
     int _detection_status;
 
     std::string _model_file_path;
