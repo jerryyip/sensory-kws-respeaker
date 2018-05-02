@@ -61,18 +61,19 @@ SnsrRC SensoryDetect::wakeWordDetectedSensoryCallback(SnsrSession s, const char*
     std::cout << "Wake word Detected: " << keyword << "  [begin: " << begin << "]  [end: " << end << "]\n";
 
     // static int number = 0;
-    // std::cout << " *** Wakeword Detected ***" << ++number << std::endl;
-    std::system("aplay ding.wav");
+    std::cout << " *** Wakeword Detected ***" << std::endl;
+    //std::system("aplay ding.wav");
     engine->_detection_status = 1;
     return SNSR_RC_OK;
 }
 
 // init
 // 
-SensoryDetect::SensoryDetect(const std::string& model_name)
+SensoryDetect::SensoryDetect(const std::string& model_name) : _m_session{nullptr}
 {
     _alexa_task_version = std::string("~0.7.0");
     _detection_status = 0;
+    _model_file_path = model_name;
 }
 
 

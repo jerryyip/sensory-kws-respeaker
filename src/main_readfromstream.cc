@@ -28,6 +28,7 @@ extern "C"
 
 using namespace std;
 using namespace respeaker;
+using namespace sensory;
 
 static bool stop = false;
 
@@ -58,8 +59,8 @@ int main(int argc, char *argv[]) {
     sigaction(SIGTERM, &sig_int_handler, NULL);
 
     // start snsr
-    SensoryDetect snsr;
-    snsr = SensoryDetect::SensoryDetect("models/spot-alexa-rpi-31000.snsr");
+    SensoryDetect snsr("models/spot-alexa-rpi-31000.snsr");
+    // snsr = SensoryDetect::SensoryDetect("models/spot-alexa-rpi-31000.snsr");
     snsr.init();
 
 
